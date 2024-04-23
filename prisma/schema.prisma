@@ -8,18 +8,23 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// datasource db {
+//   provider = "mongodb"
+//   url      = env("DATABASE_URL")
+// }
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
+  url      = "mongodb+srv://binubaiju678:binubaiju000@cluster0.papwjla.mongodb.net/Cluster0?retryWrites=true&w=majority&appName=Cluster0"
 }
 
 model User {
   id             String      @id @default(auto()) @map("_id") @db.ObjectId
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  name           String?
-  email          String   @unique
-  hashedPassword String?
-  role           String   @default("USER")
+  firstname   String
+  lastname    String
+  email       String
+  bio         String
+  resumeLink  String    // Assuming the resume link is stored as a string
+  createdAt   DateTime @default(now())
+
 
 }
