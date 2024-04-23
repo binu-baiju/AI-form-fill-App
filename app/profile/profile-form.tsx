@@ -4,7 +4,7 @@ import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
 import { cn } from "@/lib/utils";
@@ -60,13 +60,13 @@ const profileFormSchema = z.object({
     })
     .optional(),
   bio: z.string().max(160).min(4),
-  urls: z
-    .array(
-      z.object({
-        value: z.string().url({ message: "Please enter a valid URL." }),
-      }),
-    )
-    .optional(),
+  // urls: z
+  //   .array(
+  //     z.object({
+  //       value: z.string().url({ message: "Please enter a valid URL." }),
+  //     }),
+  //   )
+  //   .optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -74,10 +74,10 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 // This can come from your database or API.
 const defaultValues: Partial<ProfileFormValues> = {
   bio: "I own a computer.",
-  urls: [
-    { value: "https://shadcn.com" },
-    { value: "http://twitter.com/shadcn" },
-  ],
+  // urls: [
+  //   { value: "https://shadcn.com" },
+  //   { value: "http://twitter.com/shadcn" },
+  // ],
 };
 
 export function ProfileForm() {
@@ -86,21 +86,61 @@ export function ProfileForm() {
     defaultValues,
     mode: "onChange",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { fields, append } = useFieldArray({
-    name: "urls",
-    control: form.control,
-  });
+  // const { fields, append } = useFieldArray({
+  //   name: "urls",
+  //   control: form.control,
+  // });
 
-  function onSubmit(data: ProfileFormValues) {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  // function onSubmit(data: ProfileFormValues) {
+  //   setIsLoading(true);
+  //   console.log("hello from submit");
+
+  //   toast({
+  //     title: "You submitted the following values:",
+  //     description: (
+  //       <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+  //         <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+  //       </pre>
+  //     ),
+  //   });
+  // }
+  async function onSubmit(data: ProfileFormValues) {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("firstname", data.firstname);
+      formData.append("lastname", data.lastname);
+      formData.append("email", data.email);
+      formData.append("bio", data.bio);
+      // Append resume file
+      if (data.file && Array.isArray(data.file)) {
+        formData.append("resume", data.file[0]);
+      }
+      console.log("formData:", formData);
+
+      const response = await axios.post("/api/s3-upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      console.log("response:", response);
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully!",
+        // status: "success",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again later.",
+        // status: "error",
+      });
+    }
+    setIsLoading(false);
   }
   useEffect(() => {
     console.log("Fetching data...");
@@ -178,9 +218,12 @@ export function ProfileForm() {
               <FormControl>
                 <Input
                   placeholder="shadcn"
-                  {...field}
                   type="file"
-                  value={undefined}
+                  onChange={(event) =>
+                    field.onChange(
+                      event.target.files ? event.target.files[0] : null,
+                    )
+                  }
                 />
               </FormControl>
               <FormDescription>
@@ -213,7 +256,7 @@ export function ProfileForm() {
           )}
         />
         <div>
-          {fields.map((field, index) => (
+          {/* {fields.map((field, index) => (
             <FormField
               control={form.control}
               key={field.id}
@@ -233,8 +276,8 @@ export function ProfileForm() {
                 </FormItem>
               )}
             />
-          ))}
-          <Button
+          ))} */}
+          {/* <Button
             type="button"
             // variant="outline"
             // size="sm"
@@ -242,7 +285,7 @@ export function ProfileForm() {
             onClick={() => append({ value: "" })}
           >
             Add URL
-          </Button>
+          </Button> */}
         </div>
         <Button type="submit" className="bg-[#adfa1d] text-black">
           Save
