@@ -6,6 +6,10 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import axios from "axios";
+// import pdf from "pdf-parse";
+// import pdfjs from "pdfjs-dist";
+// const pdf = require("pdf-parse");
+// import pdfToText from 'react-pdftotext'
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -53,9 +57,9 @@ const profileFormSchema = z.object({
     .email(),
   file: z
     .object({
-      name: z.string(),
-      type: z.string(),
-      size: z.number(),
+      // name: z.string(),
+      // type: z.string(),
+      // size: z.number(),
       // Add more properties as needed
     })
     .optional(),
@@ -79,6 +83,11 @@ const defaultValues: Partial<ProfileFormValues> = {
   //   { value: "http://twitter.com/shadcn" },
   // ],
 };
+interface FileData {
+  name: string;
+  type: string;
+  size: number;
+}
 
 export function ProfileForm() {
   const form = useForm<ProfileFormValues>({
@@ -87,44 +96,61 @@ export function ProfileForm() {
     mode: "onChange",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [text, setText] = useState("");
 
-  // const { fields, append } = useFieldArray({
-  //   name: "urls",
-  //   control: form.control,
-  // });
-
-  // function onSubmit(data: ProfileFormValues) {
-  //   setIsLoading(true);
-  //   console.log("hello from submit");
-
-  //   toast({
-  //     title: "You submitted the following values:",
-  //     description: (
-  //       <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-  //         <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-  //       </pre>
-  //     ),
-  //   });
-  // }
   async function onSubmit(data: ProfileFormValues) {
     setIsLoading(true);
     try {
       const formData = new FormData();
+      const formData2 = new FormData();
       formData.append("firstname", data.firstname);
       formData.append("lastname", data.lastname);
       formData.append("email", data.email);
       formData.append("bio", data.bio);
       // Append resume file
-      if (data.file && Array.isArray(data.file)) {
-        formData.append("resume", data.file[0]);
-      }
-      console.log("formData:", formData);
+      console.log("dta;", data.file);
 
-      const response = await axios.post("/api/s3-upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
+      console.log("hello", Array.isArray(data.file));
+
+      // if (data.file) {
+      console.log("hello from file");
+
+      // const fileData = data.file as {
+      //   name: string;
+      //   type: string;
+      //   size: number;
+      // };
+
+      // Create a Blob object using the file data
+      // const file = new Blob(
+      //   [
+      //     /* Array of file content */
+      //   ],
+      //   { type: fileData.type },
+      // );
+
+      // Append the Blob object to the FormData
+      // @ts-ignore
+
+      formData.append("resume", file);
+      // }
+      console.log("formData:", formData);
+      const response = await axios.post(
+        "http://localhost:3000/api/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
+
+      // const response = await axios.post("/api/upload", formData, {
+      //   headers: {
+      //     "Content-Type": "multipart/form-data",
+      //   },
+      // });
       console.log("response:", response);
 
       toast({
@@ -142,6 +168,53 @@ export function ProfileForm() {
     }
     setIsLoading(false);
   }
+  const handleFileChange = (event: any) => {
+    setFile(event.target.files[0]);
+  };
+  async function onSubmit2(data: any) {
+    console.log("hello");
+
+    setIsLoading(true);
+    try {
+      const formData2 = new FormData();
+
+      console.log("hello");
+
+      console.log("hello", data.file);
+
+      // @ts-ignore
+      formData2.append("resume", file);
+      // }
+
+      console.log("formData2:", formData2);
+      const response = await axios.post(
+        "http://localhost:3009/api/text/upload",
+        formData2,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      setText(response.data.text);
+      console.log("response:", response);
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully!",
+        // status: "success",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again later.",
+        // status: "error",
+      });
+    }
+    setIsLoading(false);
+  }
+
   useEffect(() => {
     console.log("Fetching data...");
     const fetchData = async () => {
@@ -219,11 +292,16 @@ export function ProfileForm() {
                 <Input
                   placeholder="shadcn"
                   type="file"
-                  onChange={(event) =>
-                    field.onChange(
-                      event.target.files ? event.target.files[0] : null,
-                    )
-                  }
+                  // onChange={(event) => {
+                  //   console.log(
+                  //     "Selected file:",
+                  //     event.target.files ? event.target.files[0] : null,
+                  //   );
+                  //   field.onChange(
+                  //     event.target.files ? event.target.files[0] : null,
+                  //   );
+                  // }}
+                  onChange={handleFileChange}
                 />
               </FormControl>
               <FormDescription>
@@ -234,6 +312,8 @@ export function ProfileForm() {
             </FormItem>
           )}
         />
+        {/* <input type="file" accept=".pdf" onChange={handleFileChange} /> */}
+
         <FormField
           control={form.control}
           name="bio"
