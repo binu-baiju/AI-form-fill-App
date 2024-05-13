@@ -1,51 +1,129 @@
 "use client";
-import { useState } from "react";
 
-const UploadForm = () => {
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import axios from "axios";
+// import { Input } from "postcss";
+import React, { ChangeEvent, useState } from "react";
+
+const PdfTextExtract = () => {
+  // const [file, setFile] = useState(null);
   const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [text, setText] = useState("");
+  const [formData, setFormData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    bio: "",
+  });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+  // const handleFileChange = (event:any) => {
+  //   setFile(event.target.files[0]);
+  // };
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files && event.target.files[0];
+    if (selectedFile) {
+      setFile(() => selectedFile);
     }
   };
+  const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!file) return;
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    const formData2 = new FormData();
+    formData2.append("resume", file);
+    formData2.append("firstname", formData.firstname);
+    formData2.append("lastname", formData.lastname);
+    formData2.append("email", formData.email);
+    formData2.append("bio", formData.bio);
 
     try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await axios.post(
+        "http://localhost:3009/api/text/upload",
+        formData2,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
-      const data = await response.json();
-      console.log("response:", data.status);
-      setUploading(false);
+      setText(response.data.text);
     } catch (error) {
-      console.log(error);
-      setUploading(false);
+      console.error(error);
     }
   };
 
   return (
-    <>
-      <h1>Upload Files to S3 Bucket</h1>
+    <div>
+      <h1>PDF Text Extractor</h1>
+      <input type="file" accept=".pdf" onChange={handleFileChange} />
+      <div>
+        <label>First Name:</label>
+        <textarea
+          name="firstname"
+          value={formData.firstname}
+          onChange={handleInputChange}
+        />
+      </div>
+      <div>
+        <label>Last Name:</label>
+        <textarea
+          name="lastname"
+          value={formData.lastname}
+          onChange={handleInputChange}
+        />
+      </div>
+      <div>
+        <label>Email:</label>
+        <textarea
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+        />
+      </div>
+      <div>
+        <label>Bio:</label>
+        <textarea
+          name="bio"
+          value={formData.bio}
+          onChange={handleInputChange}
+        />
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        <button type="submit" disabled={!file || uploading}>
-          {uploading ? "Uploading..." : "Upload"}
-        </button>
-      </form>
-    </>
+      <button onClick={handleSubmit}>Upload and Extract</button>
+      <div>
+        <h2>Extracted Text:</h2>
+        <div className="text-container">{text}</div>
+      </div>
+    </div>
   );
 };
 
-export default UploadForm;
+export default PdfTextExtract;
+
+// "use client";
+// import { FilePond } from "react-filepond";
+// import "filepond/dist/filepond.min.css";
+// import { useState } from "react";
+
+// export default function FileUpload() {
+//   return (
+//     <FilePond
+//       server={{
+//         process: "/api/pdftotext",
+//         fetch: null,
+//         revert: null,
+//       }}
+//     />
+//   );
+// }

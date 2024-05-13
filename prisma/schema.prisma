@@ -8,23 +8,35 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// datasource db {
-//   provider = "mongodb"
-//   url      = env("DATABASE_URL")
-// }
 datasource db {
   provider = "mongodb"
-  url      = "mongodb+srv://binubaiju678:binubaiju000@cluster0.papwjla.mongodb.net/Cluster0?retryWrites=true&w=majority&appName=Cluster0"
+  url      = env("DATABASE_URL")
 }
 
+
 model User {
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  username                String   @unique
+  email                   String   @unique
+  password                String
+  isVerified              Boolean  @default(false)
+  isAdmin                 Boolean  @default(false)
+  forgotPasswordToken     String?
+  forgotPasswordTokenExpiry DateTime?
+  verifyToken             String?
+  verifyTokenExpiry       DateTime?
+  userDetails             UserDetails? 
+}
+model UserDetails {
   id             String      @id @default(auto()) @map("_id") @db.ObjectId
   firstname   String
   lastname    String
   email       String
   bio         String
   resumeLink  String    // Assuming the resume link is stored as a string
+  pdfText     String
   createdAt   DateTime @default(now())
-
+  user           User?       @relation(fields: [userId], references: [id])
+  userId         String?     @map("user_id") @unique @db.ObjectId// Foreign key to User model
 
 }
